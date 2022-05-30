@@ -1,0 +1,74 @@
+version: '2'
+
+services:
+  coin-api:
+    container_name: coin-api
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - '5000:5000'
+    restart: 'on-failure'
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: coin-api-cadvisor
+    restart: always
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    depends_on:
+      - coin-api
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: coin-api-prometheus
+    restart: always
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ./prometheus:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - '9090:9090'
+  alertmanager:
+    image: prom/alertmanager:v0.23.0
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    volumes:
+      - "./alertmanager:/config"
+      - alertmanager-data:/data
+    command: --config.file=/config/alertmanager.yml --log.level=debug --cluster.advertise-address=0.0.0.0:9093
+  discord-alerts:
+    image: benjojo/alertmanager-discord
+    container_name: discord-alerts
+    restart: unless-stopped
+    environment:
+      - DISCORD_WEBHOOK=${DISCORD_WEBHOOK_URL}
+    ports:
+      - 9094:9094
+  grafana:
+    image: grafana/grafana:latest
+    container_name: coin-api-grafana
+    restart: always
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/data:/var/lib/grafana
+    user: "1000"
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+
+volumes:
+  alertmanager-data:

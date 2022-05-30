@@ -1,0 +1,23 @@
+groups:
+  - name: alert_rules
+    interval: 1s
+    rules:
+      - alert: container_not_running
+        expr: |
+          time() - container_last_seen{name="coin-api"} > 10
+            or
+          time() - container_last_seen{name="coin-api-grafana"} > 10
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Container "{{ $labels.name }}" not running
+          description: 'container "{{ $labels.name }}" down for more than {{ $value | printf "%.0f" }} seconds'
+      - alert: lot_of_coin_flips
+        expr: rate(flip_count{job="coin-api"}[1m]) * 60 > 1000
+        for: 1s
+        labels:
+          severity: critical
+        annotations:
+          summary: The coin flip server is experiencing a lot of coin flips.
+          description: 'An estimated {{ $value | printf "%.0f" }} coins have been flipped in the last minute.'
