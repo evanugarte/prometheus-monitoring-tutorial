@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: prometheus-federation
+    honor_labels: true
+    metrics_path: /federate
+    params:
+      match[]:
+        - '{job=~".+"}'
+        - '{app=~".+"}'
+    static_configs:
+      - targets: 
+        - prometheus-with-cadvisor-metrics:9090
+        - prometheus-with-nodejs-metrics:9090

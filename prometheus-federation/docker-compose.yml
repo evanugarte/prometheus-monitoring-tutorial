@@ -1,0 +1,40 @@
+version: '3.7'
+
+services:
+  prometheus-federation:
+    image: prom/prometheus:latest
+    restart: always
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ./prometheus/prometheus-federation.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - 9091:9090
+  prometheus-with-nodejs-metrics:
+    image: prom/prometheus:latest
+    restart: always
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ./prometheus/prometheus-with-nodejs-metrics.yml:/etc/prometheus/prometheus.yml:ro
+  coin-api:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - '5000:5000'
+  prometheus-with-cadvisor-metrics:
+    image: prom/prometheus:latest
+    restart: always
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ./prometheus/prometheus-with-cadvisor-metrics.yml:/etc/prometheus/prometheus.yml:ro
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    restart: always
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
